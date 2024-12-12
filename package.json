@@ -1,0 +1,42 @@
+{
+  "name": "dependency-analyzer",
+  "version": "1.0.0",
+  "description": "Analyzes which dependencies in package.json are actually being used in the project",
+  "main": "src/index.js",
+  "type": "module",
+  "bin": {
+    "dependency-analyzer": "./bin/cli.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "publish:yalc": "yalc publish",
+    "push:yalc": "yalc push",
+    "remove:yalc": "yalc remove --all"
+  },
+  "keywords": [
+    "dependencies",
+    "analyzer",
+    "unused-dependencies",
+    "package.json"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@babel/parser": "^7.23.5",
+    "@babel/traverse": "^7.23.5",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "fast-glob": "^3.3.2",
+    "filesize": "^10.1.0",
+    "inquirer": "^9.2.12",
+    "ora": "^7.0.1",
+    "pkg": "^5.8.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "yalc": "^1.0.0-pre.53"
+  }
+}
