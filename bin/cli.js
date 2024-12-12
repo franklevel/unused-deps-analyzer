@@ -61,12 +61,14 @@ async function removePackages(packages, projectPath) {
     
     switch (action) {
       case 'Force delete with --force':
+        spinner.start('Force removing packages...');
         await execAsync(`npm uninstall --force ${packages.join(' ')}`, { cwd: projectPath });
-        console.log(chalk.green('✓ Packages removed with force')); 
+        spinner.succeed(chalk.green('✓ Packages removed with force')); 
         break;
       case 'Remove peer dependencies':
+        spinner.start('Removing packages with peer dependencies...');
         await execAsync(`npm uninstall ${packages.join(' ')} --legacy-peer-deps`, { cwd: projectPath });
-        console.log(chalk.green('✓ Packages removed, including peer dependencies')); 
+        spinner.succeed(chalk.green('✓ Packages removed, including peer dependencies')); 
         break;
       case 'Retry removal':
         return await removePackages(packages, projectPath);
