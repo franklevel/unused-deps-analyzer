@@ -104,7 +104,13 @@ async function promptForRemoval(unusedDeps, packageDetails) {
     return;
   }
 
-  console.log('\nSelected packages:');
+  // Calculate total size of selected packages
+  const totalSize = selectedPackages.reduce((total, pkg) => {
+    const details = packageDetails.get(pkg);
+    return total + details.size;
+  }, 0);
+
+  console.log(`\nSelected packages (Total size: ${filesize(totalSize)}):`);
   selectedPackages.forEach(pkg => {
     const details = packageDetails.get(pkg);
     console.log(chalk.gray(`  - ${pkg} [${details.size}]`));
