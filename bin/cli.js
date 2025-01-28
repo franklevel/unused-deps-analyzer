@@ -43,6 +43,39 @@ async function removePackages(packages, projectPath) {
   } catch (error) {
     spinner.fail(chalk.red('✗ Failed to remove packages'));
     console.error(chalk.red(error.message));
+    
+    // Ask user for options
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+          'Force delete with --force',
+          'Remove peer dependencies',
+          'Retry removal',
+          'Cancel'
+        ],
+      }
+    ]);
+    
+    switch (action) {
+      case 'Force delete with --force':
+        spinner.start('Force removing packages...');
+        await execAsync(`npm uninstall --force ${packages.join(' ')}`, { cwd: projectPath });
+        spinner.succeed(chalk.green('✓ Packages removed with force')); 
+        break;
+      case 'Remove peer dependencies':
+        spinner.start('Removing packages with peer dependencies...');
+        await execAsync(`npm uninstall ${packages.join(' ')} --legacy-peer-deps`, { cwd: projectPath });
+        spinner.succeed(chalk.green('✓ Packages removed, including peer dependencies')); 
+        break;
+      case 'Retry removal':
+        return await removePackages(packages, projectPath);
+      case 'Cancel':
+        console.log(chalk.yellow('Package removal cancelled.'));
+        break;
+    }
     return false;
   }
 }
@@ -71,7 +104,13 @@ async function promptForRemoval(unusedDeps, packageDetails) {
     return;
   }
 
-  console.log('\nSelected packages:');
+  // Calculate total size of selected packages
+  const totalSize = selectedPackages.reduce((total, pkg) => {
+    const details = packageDetails.get(pkg);
+    return total + details.size;
+  }, 0);
+
+  console.log(`\nSelected packages (Total size: ${filesize(totalSize)}):`);
   selectedPackages.forEach(pkg => {
     const details = packageDetails.get(pkg);
     console.log(chalk.gray(`  - ${pkg} [${details.size}]`));
