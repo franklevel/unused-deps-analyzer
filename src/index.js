@@ -1,145 +1,216 @@
-import { promises as fs } from 'fs';
-import { join } from 'path';
-import fastGlob from 'fast-glob';
-import { builtinModules } from 'module';
+#!/usr/bin/env node
+
+import { Command } from 'commander';
+import chalk from 'chalk';
+import inquirer from 'inquirer';
 import { filesize } from 'filesize';
-import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
+import { analyze } from '../src/index.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import ora from 'ora';
 
-async function getPackageSize(packageName, projectPath) {
+const execAsync = promisify(exec);
+
+// ASCII Art Banner
+console.log(chalk.cyan(`
+ ____                           _                          
+|  _ \\  ___ _ __   ___ _ __   | |    ___ _ __   ___ _   _ 
+| | | |/ _ \\ '_ \\ / _ \\ '_ \\  | |   / _ \\ '_ \\ / __| | | |
+| |_| |  __/ |_) |  __/ | | | | |__|  __/ | | | (__| |_| |
+|____/ \\___| .__/ \\___|_| |_| |_____\\___|_| |_|\\___|\\__, |
+           |_|                                       |___/ 
+     _                _                     
+    / \\   _ __   __ _| |_   _ _______ _ __ 
+   / _ \\ | '_ \\ / _\` | | | | |_  / _ \\ '__|
+  / ___ \\| | | | (_| | | |_| |/ /  __/ |   
+ /_/   \\_\\_| |_|\\__,_|_|\\__, /___\\___|_|   
+                        |___/               
+`));
+
+const program = new Command();
+
+program
+  .version('1.0.0')
+  .description('Analyze package dependencies usage in a Node.js project')
+  .option('-p, --path <path>', 'Path to the project root', process.cwd())
+  .option('-d, --dev', 'Include devDependencies in analysis', false)
+  .parse(process.argv);
+
+const options = program.opts();
+
+// Configure filesize options
+const filesizeOptions = {
+  base: 2,
+  standard: "jedec"
+};
+
+async function removePackages(packages, projectPath) {
+  const spinner = ora('Removing packages...').start();
+  const startTime = process.hrtime.bigint();
+  
   try {
-    const packagePath = join(projectPath, 'node_modules', packageName);
-    const files = await fastGlob(['**/*'], {
-      cwd: packagePath,
-      ignore: ['.*'],
-      dot: false,
-      stats: true
+    const { stdout, stderr } = await execAsync(`npm uninstall ${packages.join(' ')}`, {
+      cwd: projectPath
     });
     
-    return files.reduce((acc, file) => acc + file.stats.size, 0);
+    const endTime = process.hrtime.bigint();
+    const duration = Number(endTime - startTime) / 1e9; // Convert to seconds
+    
+    spinner.succeed(chalk.green('✓ Packages removed successfully'));
+    
+    console.log('\nRemoved packages:');
+    packages.forEach(pkg => console.log(chalk.gray(`  - ${pkg}`)));
+    console.log(chalk.blue(`\n⏱️  Time taken: ${duration.toFixed(2)} seconds`));
+    
+    return true;
   } catch (error) {
-    return 0;
-  }
-}
-
-async function readPackageJson(projectPath) {
-  const packageJsonPath = join(projectPath, 'package.json');
-  try {
-    const content = await fs.readFile(packageJsonPath, 'utf8');
-    return JSON.parse(content);
-  } catch (error) {
-    throw new Error(`Failed to read package.json: ${error.message}`);
-  }
-}
-
-async function findJsFiles(projectPath) {
-  try {
-    const files = await fastGlob(['**/*.{js,jsx,ts,tsx}'], {
-      cwd: projectPath,
-      ignore: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**'],
-      dot: true,
-      absolute: false
-    });
-    return files;
-  } catch (error) {
-    throw new Error(`Failed to find JS files: ${error.message}`);
-  }
-}
-
-async function analyzeFile(filePath, projectPath) {
-  try {
-    const content = await fs.readFile(join(projectPath, filePath), 'utf8');
-    const ast = parse(content, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript']
-    });
-
-    const imports = new Set();
-
-    traverse.default(ast, {
-      ImportDeclaration(path) {
-        imports.add(path.node.source.value);
-      },
-      CallExpression(path) {
-        if (path.node.callee.name === 'require') {
-          const arg = path.node.arguments[0];
-          if (arg.type === 'StringLiteral') {
-            imports.add(arg.value);
-          }
-        }
+    spinner.fail(chalk.red('✗ Failed to remove packages'));
+    console.error(chalk.red(error.message));
+    
+    // Ask user for options
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+          'Force delete with --force',
+          'Remove peer dependencies',
+          'Retry removal',
+          'Cancel'
+        ],
       }
-    });
-
-    return Array.from(imports).filter(imp => {
-      // Filter out relative imports and built-in modules
-      return !imp.startsWith('.') && !imp.startsWith('/') && !isBuiltInModule(imp);
-    });
-  } catch (error) {
-    console.error(`Error analyzing file ${filePath}:`, error);
-    return [];
-  }
-}
-
-function isBuiltInModule(moduleName) {
-  return builtinModules.includes(moduleName);
-}
-
-function getPackageName(importPath) {
-  // Handle scoped packages and submodules
-  const parts = importPath.split('/');
-  if (parts[0].startsWith('@')) {
-    return `${parts[0]}/${parts[1]}`;
-  }
-  return parts[0];
-}
-
-async function analyze(projectPath, includeDev = false) {
-  const result = {
-    used: new Set(),
-    unused: [],
-    errors: [],
-    packageDetails: new Map()
-  };
-
-  try {
-    const packageJson = await readPackageJson(projectPath);
-    const dependencies = {
-      ...packageJson.dependencies,
-      ...(includeDev ? packageJson.devDependencies : {})
-    };
-
-    const jsFiles = await findJsFiles(projectPath);
+    ]);
     
-    // Analyze each file for imports
-    for (const file of jsFiles) {
-      const imports = await analyzeFile(file, projectPath);
-      imports.forEach(imp => {
-        const packageName = getPackageName(imp);
-        if (dependencies[packageName]) {
-          result.used.add(packageName);
-        }
-      });
+    switch (action) {
+      case 'Force delete with --force':
+        spinner.start('Force removing packages...');
+        await execAsync(`npm uninstall --force ${packages.join(' ')}`, { cwd: projectPath });
+        spinner.succeed(chalk.green('✓ Packages removed with force')); 
+        break;
+      case 'Remove peer dependencies':
+        spinner.start('Removing packages with peer dependencies...');
+        await execAsync(`npm uninstall ${packages.join(' ')} --legacy-peer-deps`, { cwd: projectPath });
+        spinner.succeed(chalk.green('✓ Packages removed, including peer dependencies')); 
+        break;
+      case 'Retry removal':
+        return await removePackages(packages, projectPath);
+      case 'Cancel':
+        console.log(chalk.yellow('Package removal cancelled.'));
+        break;
     }
-
-    // Find unused dependencies and gather package details
-    result.unused = Object.keys(dependencies).filter(dep => !result.used.has(dep) && dep !== 'dependency-analyzer'); 
-    result.used = Array.from(result.used);
-
-    // Get package sizes
-    const allPackages = [...result.used, ...result.unused];
-    for (const pkg of allPackages) {
-      result.packageDetails.set(pkg, {
-        size: await getPackageSize(pkg, projectPath),
-        version: dependencies[pkg],
-        isUsed: result.used.includes(pkg)
-      });
-    }
-
-  } catch (error) {
-    result.errors.push(error.message);
+    return false;
   }
-
-  return result;
 }
 
-export { analyze };
+async function promptForRemoval(unusedDeps, packageDetails) {
+  if (unusedDeps.length === 0) return;
+
+  const choices = unusedDeps.map(dep => ({
+    name: `${dep} ${chalk.gray(`v${packageDetails.get(dep).version}`)} ${chalk.blue(`[${packageDetails.get(dep).size}]`)}`,
+    value: dep,
+    checked: false
+  })).filter(dep => dep.value !== 'dependency-analyzer'); // Exclude itself
+
+  const { selectedPackages } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'selectedPackages',
+      message: 'Select packages to remove:',
+      choices,
+      pageSize: 10
+    }
+  ]);
+
+  if (selectedPackages.length === 0) {
+    console.log(chalk.yellow('\nNo packages selected for removal.'));
+    return;
+  }
+
+  // Calculate total size of selected packages
+  const totalSize = selectedPackages.reduce((total, pkg) => {
+    const details = packageDetails.get(pkg);
+    return total + details.size;
+  }, 0);
+
+  console.log(`\nSelected packages (Total size: ${filesize(totalSize, filesizeOptions)}):`);
+  selectedPackages.forEach(pkg => {
+    const details = packageDetails.get(pkg);
+    console.log(chalk.gray(`  - ${pkg} [${filesize(details.size, filesizeOptions)}]`));
+  });
+
+  const { confirm } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: `\nAre you sure you want to remove these packages?`,
+      default: false
+    }
+  ]);
+
+  if (confirm) {
+    await removePackages(selectedPackages, options.path);
+  } else {
+    console.log(chalk.yellow('\nPackage removal cancelled.'));
+  }
+}
+
+analyze(options.path, options.dev)
+  .then(async result => {
+    const startTime = process.hrtime.bigint();
+    
+    console.log('\n📦 Dependency Analysis Results:\n');
+    
+    console.log(chalk.bold('Used Dependencies:'));
+    result.used.forEach(dep => {
+      const details = result.packageDetails.get(dep);
+      console.log(
+        chalk.green('✓'),
+        chalk.bold(dep),
+        chalk.gray(`v${details.version}`),
+        chalk.blue(`[${details.size}]`),
+        chalk.yellow('⚡ active')
+      );
+    });
+    
+    if (result.unused.length > 0) {
+      console.log('\n' + chalk.bold('Unused Dependencies:'));
+      result.unused.forEach(dep => {
+        const details = result.packageDetails.get(dep);
+        console.log(
+          chalk.red('✗'),
+          chalk.bold(dep),
+          chalk.gray(`v${details.version}`),
+          chalk.blue(`[${details.size}]`),
+          chalk.red('❌ unused')
+        );
+      });
+    }
+    
+    if (result.errors.length > 0) {
+      console.log('\n' + chalk.bold('Errors encountered:'));
+      result.errors.forEach(error => {
+        console.log(chalk.red('! ') + error);
+      });
+    }
+
+    const endTime = process.hrtime.bigint();
+    const analysisDuration = Number(endTime - startTime) / 1e9;
+
+    // Print summary
+    const totalDeps = result.used.length + result.unused.length;
+    console.log('\n' + chalk.bold('Summary:'));
+    console.log(chalk.green(`✓ ${result.used.length} used dependencies`));
+    console.log(chalk.red(`✗ ${result.unused.length} unused dependencies`));
+    console.log(chalk.blue(`📊 Usage: ${Math.round((result.used.length / totalDeps) * 100)}%`));
+    console.log(chalk.blue(`⏱️  Analysis time: ${analysisDuration.toFixed(2)} seconds`));
+
+    // Prompt for package removal if there are unused dependencies
+    if (result.unused.length > 0) {
+      await promptForRemoval(result.unused, result.packageDetails);
+    }
+  })
+  .catch(error => {
+    console.error(chalk.red('Error analyzing dependencies:'), error);
+    process.exit(1);
+  });
