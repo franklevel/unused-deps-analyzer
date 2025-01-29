@@ -3,12 +3,29 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import { filesize } from 'filesize';
 import { analyze } from '../src/index.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import ora from 'ora';
 
 const execAsync = promisify(exec);
+
+// ASCII Art Banner
+console.log(chalk.cyan(`
+ ____                           _                          
+|  _ \\  ___ _ __   ___ _ __   | |    ___ _ __   ___ _   _ 
+| | | |/ _ \\ '_ \\ / _ \\ '_ \\  | |   / _ \\ '_ \\ / __| | | |
+| |_| |  __/ |_) |  __/ | | | | |__|  __/ | | | (__| |_| |
+|____/ \\___| .__/ \\___|_| |_| |_____\\___|_| |_|\\___|\\__, |
+           |_|                                       |___/ 
+     _                _                     
+    / \\   _ __   __ _| |_   _ _______ _ __ 
+   / _ \\ | '_ \\ / _\` | | | | |_  / _ \\ '__|
+  / ___ \\| | | | (_| | | |_| |/ /  __/ |   
+ /_/   \\_\\_| |_|\\__,_|_|\\__, /___\\___|_|   
+                        |___/               
+`));
 
 const program = new Command();
 
@@ -20,6 +37,12 @@ program
   .parse(process.argv);
 
 const options = program.opts();
+
+// Configure filesize options
+const filesizeOptions = {
+  base: 2,
+  standard: "jedec"
+};
 
 async function removePackages(packages, projectPath) {
   const spinner = ora('Removing packages...').start();
@@ -43,6 +66,39 @@ async function removePackages(packages, projectPath) {
   } catch (error) {
     spinner.fail(chalk.red('✗ Failed to remove packages'));
     console.error(chalk.red(error.message));
+    
+    // Ask user for options
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+          'Force delete with --force',
+          'Remove peer dependencies',
+          'Retry removal',
+          'Cancel'
+        ],
+      }
+    ]);
+    
+    switch (action) {
+      case 'Force delete with --force':
+        spinner.start('Force removing packages...');
+        await execAsync(`npm uninstall --force ${packages.join(' ')}`, { cwd: projectPath });
+        spinner.succeed(chalk.green('✓ Packages removed with force')); 
+        break;
+      case 'Remove peer dependencies':
+        spinner.start('Removing packages with peer dependencies...');
+        await execAsync(`npm uninstall ${packages.join(' ')} --legacy-peer-deps`, { cwd: projectPath });
+        spinner.succeed(chalk.green('✓ Packages removed, including peer dependencies')); 
+        break;
+      case 'Retry removal':
+        return await removePackages(packages, projectPath);
+      case 'Cancel':
+        console.log(chalk.yellow('Package removal cancelled.'));
+        break;
+    }
     return false;
   }
 }
@@ -71,10 +127,16 @@ async function promptForRemoval(unusedDeps, packageDetails) {
     return;
   }
 
-  console.log('\nSelected packages:');
+  // Calculate total size of selected packages
+  const totalSize = selectedPackages.reduce((total, pkg) => {
+    const details = packageDetails.get(pkg);
+    return total + details.size;
+  }, 0);
+
+  console.log(`\nSelected packages (Total size: ${filesize(totalSize, filesizeOptions)}):`);
   selectedPackages.forEach(pkg => {
     const details = packageDetails.get(pkg);
-    console.log(chalk.gray(`  - ${pkg} [${details.size}]`));
+    console.log(chalk.gray(`  - ${pkg} [${filesize(details.size, filesizeOptions)}]`));
   });
 
   const { confirm } = await inquirer.prompt([
