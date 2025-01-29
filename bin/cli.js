@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import { filesize } from 'filesize';
 import { analyze } from '../src/index.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -36,6 +37,12 @@ program
   .parse(process.argv);
 
 const options = program.opts();
+
+// Configure filesize options
+const filesizeOptions = {
+  base: 2,
+  standard: "jedec"
+};
 
 async function removePackages(packages, projectPath) {
   const spinner = ora('Removing packages...').start();
@@ -126,10 +133,10 @@ async function promptForRemoval(unusedDeps, packageDetails) {
     return total + details.size;
   }, 0);
 
-  console.log(`\nSelected packages (Total size: ${filesize(totalSize)}):`);
+  console.log(`\nSelected packages (Total size: ${filesize(totalSize, filesizeOptions)}):`);
   selectedPackages.forEach(pkg => {
     const details = packageDetails.get(pkg);
-    console.log(chalk.gray(`  - ${pkg} [${details.size}]`));
+    console.log(chalk.gray(`  - ${pkg} [${filesize(details.size, filesizeOptions)}]`));
   });
 
   const { confirm } = await inquirer.prompt([
