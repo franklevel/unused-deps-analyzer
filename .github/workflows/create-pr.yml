@@ -1,0 +1,42 @@
+name: Create PR to Main
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+    branches:
+      - develop
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: develop
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: merge develop into main"
+          title: "chore: merge develop into main"
+          body: |
+            This PR was automatically created by the CI workflow.
+            
+            Changes included in this PR:
+            - Automated merge from develop to main
+            - All tests have passed successfully
+            
+            Please review and merge if appropriate.
+          branch: develop
+          base: main
+          delete-branch: false
+          labels: |
+            automated pr
+            ready for review
+          draft: false
