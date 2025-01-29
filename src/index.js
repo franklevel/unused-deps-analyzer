@@ -16,10 +16,9 @@ async function getPackageSize(packageName, projectPath) {
       stats: true
     });
     
-    const totalSize = files.reduce((acc, file) => acc + file.stats.size, 0);
-    return filesize(totalSize);
+    return files.reduce((acc, file) => acc + file.stats.size, 0);
   } catch (error) {
-    return 'N/A';
+    return 0;
   }
 }
 
