@@ -22,7 +22,10 @@
     "unused-dependencies",
     "package.json"
   ],
-  "author": "",
+  "author": {
+    "name": "Frank Ruiz",
+    "email": "franklevel@gmail.com"
+  },
   "license": "MIT",
   "dependencies": {
     "@babel/parser": "^7.23.5",
