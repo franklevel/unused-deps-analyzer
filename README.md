@@ -3,6 +3,14 @@
 ## Overview
 The Dependency Analyzer is an NPM package designed to analyze and manage unused dependencies in Node.js projects.
 
+**🚀 Motivation**  
+
+In the fast-paced world of software development, maintaining a clean and efficient project can be challenging. Over time, dependencies accumulate, and unused or outdated packages 📦 can creep into your codebase, leading to unnecessary complexity, larger build sizes 📏, and potential security vulnerabilities 🔒.  
+
+This project was created to empower developers 👨‍💻👩‍💻 by simplifying dependency management. It aims to streamline your Node.js projects by identifying unused packages, outdated dependencies, and potential redundancies. By keeping your dependencies lean and up-to-date, this tool not only enhances your project's performance ⚡ but also ensures better maintainability 🛠️, security 🛡️, and developer productivity.  
+
+With this solution, developers can focus on building great software 🎯 while the tool takes care of keeping the dependency ecosystem healthy and optimized. 🚀
+
 ## Key Features
 - **Dependency Analysis**: Scans project files for used and unused dependencies, supporting both production and dev dependencies.
 - **Detailed Package Information**: Provides information such as version, size, and usage statistics.
@@ -10,10 +18,10 @@ The Dependency Analyzer is an NPM package designed to analyze and manage unused 
 - **Timing Information**: Displays the time taken for both analysis and package removal processes.
 - **Exclusion of Itself**: Automatically excludes the `dependency-analyzer` package from being listed as unused or selected for removal.
 
-## Installation
-To install the Dependency Analyzer, run the following command:
+## Installation (Recommended)
+To install the Dependency Analyzer, run the following command to install it globally:
 ```bash
-npm install dependency-analyzer
+npm install -g dependency-analyzer
 ```
 
 ## Usage
