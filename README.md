@@ -1,7 +1,7 @@
-# Dependency Analyzer
+# Unused Dependencies Analyzer
 
 ## Overview
-The Dependency Analyzer is an NPM package designed to analyze and manage unused dependencies in Node.js projects.
+The Unused Dependencies Analyzer is an NPM package designed to identify and remove unused dependencies in Node.js projects.
 
 **🚀 Motivation**  
 
@@ -16,18 +16,18 @@ With this solution, developers can focus on building great software 🎯 while t
 - **Detailed Package Information**: Provides information such as version, size, and usage statistics.
 - **Interactive CLI**: Offers a user-friendly command-line interface with colorized output and interactive package selection for removal.
 - **Timing Information**: Displays the time taken for both analysis and package removal processes.
-- **Exclusion of Itself**: Automatically excludes the `dependency-analyzer` package from being listed as unused or selected for removal.
+- **Exclusion of Itself**: Automatically excludes the `unused-deps-analyzer` package from being listed as unused or selected for removal.
 
 ## Installation (Recommended)
-To install the Dependency Analyzer, run the following command to install it globally:
+To install the Unused Dependency Analyzer, run the following command to install it globally:
 ```bash
-npm install -g dependency-analyzer
+npm install -g @franklevel/unused-deps-analyzer
 ```
 
 ## Usage
 To analyze dependencies in your project, run:
 ```bash
-npx dependency-analyzer
+npx @franklevel/unused-deps-analyzer
 ```
 
 ## Contribution
