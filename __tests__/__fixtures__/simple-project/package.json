@@ -1,0 +1,11 @@
+{
+  "name": "simple-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "unused-package": "^1.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
