@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { filesize } from 'filesize';
+import filesize from 'filesize';
 import { analyze } from '../src/index.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -110,7 +110,7 @@ async function promptForRemoval(unusedDeps, packageDetails) {
     name: `${dep} ${chalk.gray(`v${packageDetails.get(dep).version}`)} ${chalk.blue(`[${filesize(packageDetails.get(dep).size, filesizeOptions)}]`)}`,
     value: dep,
     checked: false
-  })).filter(dep => dep.value !== 'unused-deps-analyzer'); // Exclude itself
+  })).filter(dep => dep.value !== '@franklevel/unused-deps-analyzer'); // Exclude itself
 
   const { selectedPackages } = await inquirer.prompt([
     {

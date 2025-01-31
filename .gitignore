@@ -35,3 +35,6 @@ coverage/
 # yalc
 .yalc/
 yalc.lock
+
+# Local development files
+.npmrc
