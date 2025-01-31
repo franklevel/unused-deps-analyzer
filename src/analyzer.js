@@ -5,6 +5,42 @@ import { parse } from '@babel/parser';
 import traversePkg from '@babel/traverse';
 const traverse = traversePkg.default;
 
+// Configure parser options based on file extension
+function getParserOptions(filePath) {
+  const ext = path.extname(filePath);
+  const baseOptions = {
+    sourceType: 'module',
+    plugins: [
+      'decorators',
+      'classProperties',
+      'objectRestSpread',
+      'dynamicImport',
+      'optionalChaining',
+      'nullishCoalescing'
+    ]
+  };
+
+  switch (ext) {
+    case '.tsx':
+      return {
+        ...baseOptions,
+        plugins: [...baseOptions.plugins, 'typescript', 'jsx']
+      };
+    case '.ts':
+      return {
+        ...baseOptions,
+        plugins: [...baseOptions.plugins, 'typescript']
+      };
+    case '.jsx':
+      return {
+        ...baseOptions,
+        plugins: [...baseOptions.plugins, 'jsx']
+      };
+    default:
+      return baseOptions;
+  }
+}
+
 export async function analyze(projectPath, includeDevDependencies = false) {
   try {
     // Read package.json
@@ -23,7 +59,6 @@ export async function analyze(projectPath, includeDevDependencies = false) {
       ignore: ['node_modules/**', 'dist/**', 'build/**', 'coverage/**', '.git/**']
     });
     
-
     // Track used dependencies
     const usedDependencies = new Set();
     const errors = [];
@@ -47,21 +82,12 @@ export async function analyze(projectPath, includeDevDependencies = false) {
     // Analyze each file
     for (const file of files) {
       try {
+        const filePath = path.join(projectPath, file);
         console.log(`\nAnalyzing file: ${file}`);
-        const content = await readFile(path.join(projectPath, file), 'utf8');
-        const ast = parse(content, {
-          sourceType: 'module',
-          plugins: [
-            'jsx',
-            'typescript',
-            'decorators',
-            'classProperties',
-            'objectRestSpread',
-            'dynamicImport',
-            'optionalChaining',
-            'nullishCoalescing'
-          ]
-        });
+        const content = await readFile(filePath, 'utf8');
+        const parserOptions = getParserOptions(filePath);
+        
+        const ast = parse(content, parserOptions);
         
         traverse(ast, {
           ImportDeclaration(path) {
