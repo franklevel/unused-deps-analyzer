@@ -107,7 +107,7 @@ async function promptForRemoval(unusedDeps, packageDetails) {
   if (unusedDeps.length === 0) return;
 
   const choices = unusedDeps.map(dep => ({
-    name: `${dep} ${chalk.gray(`v${packageDetails.get(dep).version}`)} ${chalk.blue(`[${packageDetails.get(dep).size}]`)}`,
+    name: `${dep} ${chalk.gray(`v${packageDetails.get(dep).version}`)} ${chalk.blue(`[${filesize(packageDetails.get(dep).size, filesizeOptions)}]`)}`,
     value: dep,
     checked: false
   })).filter(dep => dep.value !== 'dependency-analyzer'); // Exclude itself
@@ -168,7 +168,7 @@ analyze(options.path, options.dev)
         chalk.green('✓'),
         chalk.bold(dep),
         chalk.gray(`v${details.version}`),
-        chalk.blue(`[${details.size}]`),
+        chalk.blue(`[${filesize(details.size, filesizeOptions)}]`),
         chalk.yellow('⚡ active')
       );
     });
@@ -181,7 +181,7 @@ analyze(options.path, options.dev)
           chalk.red('✗'),
           chalk.bold(dep),
           chalk.gray(`v${details.version}`),
-          chalk.blue(`[${details.size}]`),
+          chalk.blue(`[${filesize(details.size, filesizeOptions)}]`),
           chalk.red('❌ unused')
         );
       });

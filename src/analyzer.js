@@ -41,7 +41,7 @@ export async function analyze(projectPath, includeDevDependencies = false) {
         const size = await getPackageSize(path.join(projectPath, 'node_modules', name));
         packageDetails.set(name, {
           version: pkgJson.version || version,
-          size: filesize(size, filesizeOptions)
+          size: size
         });
       } catch (error) {
         errors.push(`Failed to read package details for ${name}: ${error.message}`);
