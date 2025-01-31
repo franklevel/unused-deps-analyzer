@@ -3,13 +3,19 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import filesize from 'filesize';
+import { filesize } from 'filesize';
 import { analyze } from '../src/index.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import ora from 'ora';
 
 const execAsync = promisify(exec);
+
+// Configure filesize options
+const filesizeOptions = {
+  base: 2,
+  standard: "jedec"
+};
 
 // ASCII Art Banner
 console.log(chalk.cyan(`
@@ -37,12 +43,6 @@ program
   .parse(process.argv);
 
 const options = program.opts();
-
-// Configure filesize options
-const filesizeOptions = {
-  base: 2,
-  standard: "jedec"
-};
 
 async function removePackages(packages, projectPath) {
   const spinner = ora('Removing packages...').start();
