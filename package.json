@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "type": "module",
   "bin": {
-    "dependency-analyzer": "./bin/cli.js"
+    "unused-deps-analyzer": "./bin/cli.js"
   },
   "engines": {
     "node": ">=20.0.0"

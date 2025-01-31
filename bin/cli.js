@@ -110,7 +110,7 @@ async function promptForRemoval(unusedDeps, packageDetails) {
     name: `${dep} ${chalk.gray(`v${packageDetails.get(dep).version}`)} ${chalk.blue(`[${filesize(packageDetails.get(dep).size, filesizeOptions)}]`)}`,
     value: dep,
     checked: false
-  })).filter(dep => dep.value !== 'dependency-analyzer'); // Exclude itself
+  })).filter(dep => dep.value !== 'unused-deps-analyzer'); // Exclude itself
 
   const { selectedPackages } = await inquirer.prompt([
     {

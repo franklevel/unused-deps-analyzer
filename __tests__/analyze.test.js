@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-describe('dependency-analyzer', () => {
+describe('unused-deps-analyzer', () => {
   const fixturesPath = path.join(__dirname, '__fixtures__');
   
   beforeEach(() => {
