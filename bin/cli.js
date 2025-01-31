@@ -164,26 +164,46 @@ analyze(options.path, options.dev)
     console.log(chalk.bold('Used Dependencies:'));
     result.used.forEach(dep => {
       const details = result.packageDetails.get(dep);
-      console.log(
-        chalk.green('✓'),
-        chalk.bold(dep),
-        chalk.gray(`v${details.version}`),
-        chalk.blue(`[${filesize(details.size, filesizeOptions)}]`),
-        chalk.yellow('⚡ active')
-      );
+      if (details) {
+        const size = typeof details.size === 'number' && !isNaN(details.size) ? details.size : 0;
+        console.log(
+          chalk.green('✓'),
+          chalk.bold(dep),
+          chalk.gray(`v${details?.version}`),
+          chalk.blue(`[${filesize(size, filesizeOptions)}]`),
+          chalk.yellow('⚡ active')
+        );
+      } else {
+        console.log(
+          chalk.yellow('!'),
+          chalk.bold(dep),
+          chalk.gray('(details not available)'),
+          chalk.yellow('⚡ active')
+        );
+      }
     });
     
     if (result.unused.length > 0) {
       console.log('\n' + chalk.bold('Unused Dependencies:'));
       result.unused.forEach(dep => {
         const details = result.packageDetails.get(dep);
-        console.log(
-          chalk.red('✗'),
-          chalk.bold(dep),
-          chalk.gray(`v${details.version}`),
-          chalk.blue(`[${filesize(details.size, filesizeOptions)}]`),
-          chalk.red('❌ unused')
-        );
+        if (details) {
+          const size = typeof details.size === 'number' && !isNaN(details.size) ? details.size : 0;
+          console.log(
+            chalk.red('✗'),
+            chalk.bold(dep),
+            chalk.gray(`v${details?.version}`),
+            chalk.blue(`[${filesize(size, filesizeOptions)}]`),
+            chalk.red('❌ unused')
+          );
+        } else {
+          console.log(
+            chalk.red('✗'),
+            chalk.bold(dep),
+            chalk.gray('(details not available)'),
+            chalk.red('❌ unused')
+          );
+        }
       });
     }
     
