@@ -183,6 +183,9 @@ analyze(options.path, options.dev)
       }
     });
     
+    // Filter out @franklevel/unused-deps-analyzer from unused dependencies
+    result.unused = result.unused.filter(dep => dep !== '@franklevel/unused-deps-analyzer');
+    
     if (result.unused.length > 0) {
       console.log('\n' + chalk.bold('Unused Dependencies:'));
       result.unused.forEach(dep => {
@@ -224,11 +227,6 @@ analyze(options.path, options.dev)
     console.log(chalk.red(`✗ ${result.unused.length} unused dependencies`));
     console.log(chalk.blue(`📊 Usage: ${Math.round((result.used.length / totalDeps) * 100)}%`));
     console.log(chalk.blue(`⏱️  Analysis time: ${analysisDuration.toFixed(2)} seconds`));
-
-    // Prompt for package removal if there are unused dependencies
-    if (result.unused.length > 0) {
-      await promptForRemoval(result.unused, result.packageDetails);
-    }
   })
   .catch(error => {
     console.error(chalk.red('Error analyzing dependencies:'), error);
