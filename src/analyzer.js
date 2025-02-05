@@ -83,7 +83,6 @@ export async function analyze(projectPath, includeDevDependencies = false) {
     for (const file of files) {
       try {
         const filePath = path.join(projectPath, file);
-        console.log(`\nAnalyzing file: ${file}`);
         const content = await readFile(filePath, 'utf8');
         const parserOptions = getParserOptions(filePath);
         
@@ -92,15 +91,11 @@ export async function analyze(projectPath, includeDevDependencies = false) {
         traverse(ast, {
           ImportDeclaration(path) {
             const importPath = path.node.source.value;
-            console.log('Found import:', importPath);
             if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
               // Handle both direct package imports and submodule imports
               const pkgName = importPath.split('/')[0];
-              console.log('Package name extracted:', pkgName);
-              console.log('Is in dependencies?', !!dependencies[pkgName]);
               if (dependencies[pkgName]) {
                 usedDependencies.add(pkgName);
-                console.log('Added to used dependencies:', pkgName);
               }
             }
           },
@@ -110,14 +105,10 @@ export async function analyze(projectPath, includeDevDependencies = false) {
               const arg = path.node.arguments[0];
               if (arg && arg.type === 'StringLiteral') {
                 const importPath = arg.value;
-                console.log('Found require:', importPath);
                 if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
                   const pkgName = importPath.split('/')[0];
-                  console.log('Package name extracted:', pkgName);
-                  console.log('Is in dependencies?', !!dependencies[pkgName]);
                   if (dependencies[pkgName]) {
                     usedDependencies.add(pkgName);
-                    console.log('Added to used dependencies:', pkgName);
                   }
                 }
               }
@@ -134,7 +125,6 @@ export async function analyze(projectPath, includeDevDependencies = false) {
                   console.log('Is in dependencies?', !!dependencies[pkgName]);
                   if (dependencies[pkgName]) {
                     usedDependencies.add(pkgName);
-                    console.log('Added to used dependencies:', pkgName);
                   }
                 }
               }
@@ -146,14 +136,10 @@ export async function analyze(projectPath, includeDevDependencies = false) {
               const quasi = path.node.quasi;
               if (quasi.quasis.length === 1) {
                 const importPath = quasi.quasis[0].value.raw;
-                console.log('Found template literal import:', importPath);
                 if (!importPath.startsWith('.') && !importPath.startsWith('/')) {
                   const pkgName = importPath.split('/')[0];
-                  console.log('Package name extracted:', pkgName);
-                  console.log('Is in dependencies?', !!dependencies[pkgName]);
                   if (dependencies[pkgName]) {
                     usedDependencies.add(pkgName);
-                    console.log('Added to used dependencies:', pkgName);
                   }
                 }
               }
@@ -182,21 +168,27 @@ export async function analyze(projectPath, includeDevDependencies = false) {
 }
 
 async function getPackageSize(pkgPath) {
-  const files = await glob('**/*', {
-    cwd: pkgPath,
-    onlyFiles: true,
-    absolute: true
-  });
-  
-  let totalSize = 0;
-  for (const file of files) {
-    try {
-      const stats = await readFile(file);
-      totalSize += stats.length;
-    } catch (error) {
-      // Ignore errors for individual files
+  try {
+    const files = await glob('**/*', {
+      cwd: pkgPath,
+      onlyFiles: true,
+      absolute: true
+    });
+    
+    let totalSize = 0;
+    for (const file of files) {
+      try {
+        const stats = await readFile(file);
+        if (stats && typeof stats.length === 'number' && !isNaN(stats.length)) {
+          totalSize += stats.length;
+        }
+      } catch (error) {
+        // Ignore errors for individual files
+      }
     }
+    
+    return totalSize || 0; // Ensure we always return a valid number
+  } catch (error) {
+    return 0; // Return 0 if there's any error in the size calculation
   }
-  
-  return totalSize;
 }

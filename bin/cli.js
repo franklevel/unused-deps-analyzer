@@ -3,13 +3,19 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import filesize from 'filesize';
+import { filesize } from 'filesize';
 import { analyze } from '../src/index.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import ora from 'ora';
 
 const execAsync = promisify(exec);
+
+// Configure filesize options
+const filesizeOptions = {
+  base: 2,
+  standard: "jedec"
+};
 
 // ASCII Art Banner
 console.log(chalk.cyan(`
@@ -37,12 +43,6 @@ program
   .parse(process.argv);
 
 const options = program.opts();
-
-// Configure filesize options
-const filesizeOptions = {
-  base: 2,
-  standard: "jedec"
-};
 
 async function removePackages(packages, projectPath) {
   const spinner = ora('Removing packages...').start();
@@ -164,26 +164,49 @@ analyze(options.path, options.dev)
     console.log(chalk.bold('Used Dependencies:'));
     result.used.forEach(dep => {
       const details = result.packageDetails.get(dep);
-      console.log(
-        chalk.green('✓'),
-        chalk.bold(dep),
-        chalk.gray(`v${details.version}`),
-        chalk.blue(`[${filesize(details.size, filesizeOptions)}]`),
-        chalk.yellow('⚡ active')
-      );
+      if (details) {
+        const size = typeof details.size === 'number' && !isNaN(details.size) ? details.size : 0;
+        console.log(
+          chalk.green('✓'),
+          chalk.bold(dep),
+          chalk.gray(`v${details?.version}`),
+          chalk.blue(`[${filesize(size, filesizeOptions)}]`),
+          chalk.yellow('⚡ active')
+        );
+      } else {
+        console.log(
+          chalk.yellow('!'),
+          chalk.bold(dep),
+          chalk.gray('(details not available)'),
+          chalk.yellow('⚡ active')
+        );
+      }
     });
+    
+    // Filter out @franklevel/unused-deps-analyzer from unused dependencies
+    result.unused = result.unused.filter(dep => dep !== '@franklevel/unused-deps-analyzer');
     
     if (result.unused.length > 0) {
       console.log('\n' + chalk.bold('Unused Dependencies:'));
       result.unused.forEach(dep => {
         const details = result.packageDetails.get(dep);
-        console.log(
-          chalk.red('✗'),
-          chalk.bold(dep),
-          chalk.gray(`v${details.version}`),
-          chalk.blue(`[${filesize(details.size, filesizeOptions)}]`),
-          chalk.red('❌ unused')
-        );
+        if (details) {
+          const size = typeof details.size === 'number' && !isNaN(details.size) ? details.size : 0;
+          console.log(
+            chalk.red('✗'),
+            chalk.bold(dep),
+            chalk.gray(`v${details?.version}`),
+            chalk.blue(`[${filesize(size, filesizeOptions)}]`),
+            chalk.red('❌ unused')
+          );
+        } else {
+          console.log(
+            chalk.red('✗'),
+            chalk.bold(dep),
+            chalk.gray('(details not available)'),
+            chalk.red('❌ unused')
+          );
+        }
       });
     }
     
@@ -204,11 +227,6 @@ analyze(options.path, options.dev)
     console.log(chalk.red(`✗ ${result.unused.length} unused dependencies`));
     console.log(chalk.blue(`📊 Usage: ${Math.round((result.used.length / totalDeps) * 100)}%`));
     console.log(chalk.blue(`⏱️  Analysis time: ${analysisDuration.toFixed(2)} seconds`));
-
-    // Prompt for package removal if there are unused dependencies
-    if (result.unused.length > 0) {
-      await promptForRemoval(result.unused, result.packageDetails);
-    }
   })
   .catch(error => {
     console.error(chalk.red('Error analyzing dependencies:'), error);
