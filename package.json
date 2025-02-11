@@ -1,6 +1,6 @@
 {
   "name": "@franklevel/unused-deps-analyzer",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Analyzes which dependencies in package.json are actually being used in the project",
   "main": "src/index.js",
   "type": "module",
