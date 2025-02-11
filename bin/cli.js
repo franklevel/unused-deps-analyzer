@@ -227,6 +227,11 @@ analyze(options.path, options.dev)
     console.log(chalk.red(`✗ ${result.unused.length} unused dependencies`));
     console.log(chalk.blue(`📊 Usage: ${Math.round((result.used.length / totalDeps) * 100)}%`));
     console.log(chalk.blue(`⏱️  Analysis time: ${analysisDuration.toFixed(2)} seconds`));
+
+    // Add prompt for removal if there are unused dependencies
+    if (result.unused.length > 0) {
+      await promptForRemoval(result.unused, result.packageDetails);
+    }
   })
   .catch(error => {
     console.error(chalk.red('Error analyzing dependencies:'), error);
