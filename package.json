@@ -26,6 +26,10 @@
     "name": "Frank Ruiz",
     "email": "franklevel@gmail.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franklevel/dependency-analyzer.git"
+  },
   "license": "MIT",
   "dependencies": {
     "@babel/parser": "^7.23.5",
